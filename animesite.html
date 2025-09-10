@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SowAnime - Free Anime Streaming</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            border-bottom: 2px solid #ff6b6b;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #ffffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: #ff6b6b;
+        }
+
+        .nav-links a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #ff6b6b;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-box {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            color: #ffffff;
+            width: 300px;
+            transition: all 0.3s ease;        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+        }
+
+        .search-box::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .main-content {
+            margin-top: 100px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 2rem;
+        }
+
+        .hero-section {
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%23ff6b6b" width="1200" height="600" opacity="0.1"/><circle cx="200" cy="150" r="100" fill="%23ffd93d" opacity="0.2"/><circle cx="800" cy="400" r="150" fill="%23ff6b6b" opacity="0.15"/></svg>');
+            background-size: cover;
+            background-position: center;
+            height: 400px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d, #ff6b6b);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #ff6b6b;
+            border-left: 4px solid #ff6b6b;
+            padding-left: 1rem;
+        }
+
+        .anime-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .anime-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .anime-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 107, 107, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .anime-card:hover::before {
+            left: 100%;
+        }
+
+        .anime-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(255, 107, 107, 0.2);
+            border-color: #ff6b6b;
+        }
+
+        .anime-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #ffd93d;
+            font-weight: 600;
+        }
+
+        .anime-type {
+            background: #ff6b6b;
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .anime-duration {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .anime-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .release-date {
+            color: #ffd93d;
+            font-size: 0.9rem;
+        }
+
+        .watch-button {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .watch-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .footer {
+            background: rgba(15, 15, 35, 0.9);
+            padding: 2rem 0;
+            margin-top: 4rem;
+            border-top: 2px solid #ff6b6b;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            text-align: center;
+        }
+
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .floating-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 107, 107, 0.1);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-circle:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-circle:nth-child(2) {
+            width: 60px;
+            height: 60px;
+            top: 60%;
+            right: 10%;
+            animation-delay: 2s;
+        }
+
+        .floating-circle:nth-child(3) {
+            width: 40px;
+            height: 40px;
+            top: 80%;
+            left: 50%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .search-box {
+                width: 250px;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .anime-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-elements">
+        <div class="floating-circle"></div>
+        <div class="floating-circle"></div>
+        <div class="floating-circle"></div>
+    </div>
+
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">SowAnime</div>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#movies">Movies</a></li>
+                    <li><a href="#tv">TV Series</a></li>
+                    <li><a href="#most-popular">Most Popular</a></li>
+                    <li><a href="#top-airing">Top Airing</a></li>
+                </ul>
+            </nav>
+            <div class="search-container">
+                <input type="text" class="search-box" placeholder="Search anime...">
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="hero-section">
+            <div class="hero-content">
+                <h1 class="hero-title">Watch Anime Free</h1>
+                <p class="hero-subtitle">Stream thousands of anime episodes and movies in HD quality</p>
+                <a href="#latest" class="cta-button">Start Watching</a>
+            </div>
+        </section>
+
+        <section class="section" id="latest">
+            <h2 class="section-title">Latest Episodes</h2>
+            <div class="anime-grid">
+                <div class="anime-card">
+                    <div class="anime-type">TV</div>
+                    <h3 class="anime-title">You and Idol Precure♪</h3>
+                    <p class="anime-duration">24m</p>
+                    <div class="anime-meta">
+                        <span class="release-date">Latest Episode</span>
+                        <button class="watch-button">Watch Now</button>
+                    </div>
+                </div>
+                <div class="anime-card">
+                    <div class="anime-type">TV</div>
+                    <h3 class="anime-title">To Be Hero X</h3>
+                    <p class="anime-duration">24m</p>
+                    <div class="anime-meta">
+                        <span class="release-date">Latest Episode</span>
+                        <button class="watch-button">Watch Now</button>
+                    </div>
+                </div>
+                <div class="anime-card">
+                    <div class="anime-type">TV</div>
+                    <h3 class="anime-title">Classic Stars</h3>
+                    <p class="anime-duration">24m</p>
+                    <div class="anime-meta">
+                        <span class="release-date">Latest Episode</span>
+                        <button class="watch-button">Watch Now</button>
+                    </div>
+                </div>
+                <div class="anime-card">
+                    <div class="anime-type">ONA</div>
+                    <h3 class="anime-title">Pyramid Game</h3>
+                    <p class="anime-duration">9m</p>
+                    <div class="anime-meta">
+                        <span class="release-date">Latest Episode</span>
+                        <button class="watch-button">Watch Now</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">New On HiAnime</h2>
+            <div class="anime-grid">
+                <div class="anime-card">
+                    <div class="anime-type">TV</div>
+                    <h3 class="anime-title">The Beginning After the End</h3>
+                    <p class="anime-duration">24m</p>
+                    <div class="anime-meta">
+                        <span class="release-date">New Release</span>
+                        <button class="watch-button">Watch Now</button>
+                    </div>
+                </div>
+                <div class="anime-card">
+                    <div class="anime-type">TV</div>
+                    <h3 class="anime-title">Wind Breaker Season 2</h3>
+                    <p class="anime-duration">24m</p>
+                    <div class="anime-meta">
+                        <span class="release-date">New Release</span>
+                        <button class="watch-button">Watch Now</button>
+                    </div>
+                </div>
+                <div class="anime-card">
+                    <div class="anime-type">TV</div>
+                    <h3 class="anime-title">Fire Force Season 3</h3>
+                    <p class="anime-duration">24m</p>
+                    <div class="anime-meta">
+                        <span class="release-date">New Release</span>
+                        <button class="watch-button">Watch Now</button>
+                    </div>
+                </div>
+                <div class="anime-card">
+                    <div class="anime-type">Movie</div>
+                    <h3 class="anime-title">Rascal Does Not Dream of a Dreaming Girl</h3>
+                    <p class="anime-duration">90m</p>
+                    <div class="anime-meta">
+                        <span class="release-date">New Release</span>
+                        <button class="watch-button">Watch Now</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Top Upcoming</h2>
+            <div class="anime-grid">
+                <div class="anime-card">
+                    <div class="anime-type">Movie</div>
+                    <h3 class="anime-title">Demon Slayer: Kimetsu no Yaiba Infinity Castle</h3>
+                    <p class="anime-duration">1 eps</p>
+                    <div class="anime-meta">
+                        <span class="release-date">Jul 18, 2025</span>
+                        <button class="watch-button">Add to List</button>
+                    </div>
+                </div>
+                <div class="anime-card">
+                    <div class="anime-type">ONA</div>
+                    <h3 class="anime-title">Leviathan</h3>
+                    <p class="anime-duration">? eps</p>
+                    <div class="anime-meta">
+                        <span class="release-date">Jul 10, 2025</span>
+                        <button class="watch-button">Add to List</button>
+                    </div>
+                </div>
+                <div class="anime-card">
+                    <div class="anime-type">TV</div>
+                    <h3 class="anime-title">Mr. Osomatsu 4</h3>
+                    <p class="anime-duration">? eps</p>
+                    <div class="anime-meta">
+                        <span class="release-date">Jul 9, 2025</span>
+                        <button class="watch-button">Add to List</button>
+                    </div>
+                </div>
+                <div class="anime-card">
+                    <div class="anime-type">TV</div>
+                    <h3 class="anime-title">Solo Camping for Two</h3>
+                    <p class="anime-duration">? eps</p>
+                    <div class="anime-meta">
+                        <span class="release-date">Jul 11, 2025</span>
+                        <button class="watch-button">Add to List</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 SowAnime. All rights reserved. | Free Anime Streaming Platform</p>
+        </div>
+    </footer>
+
+    <script>
+        // Search functionality
+        document.querySelector('.search-box').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const searchTerm = this.value;
+                if (searchTerm.trim()) {
+                    alert(`Searching for: ${searchTerm}`);
+                    // In a real implementation, this would redirect to search results
+                }
+            }
+        });
+
+        // Watch button functionality
+        document.querySelectorAll('.watch-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const card = this.closest('.anime-card');
+                const title = card.querySelector('.anime-title').textContent;
+                
+                if (this.textContent === 'Add to List') {
+                    this.textContent = 'Added ✓';
+                    this.style.background = '#4CAF50';
+                    setTimeout(() => {
+                        this.textContent = 'Add to List';
+                        this.style.background = '';
+                    }, 2000);
+                } else {
+                    alert(`Now playing: ${title}`);
+                    // In a real implementation, this would open the video player
+                }
+            });
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('.nav-links a, .cta-button').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add dynamic background animation
+        function createFloatingElement() {
+            const element = document.createElement('div');
+            element.style.position = 'fixed';
+            element.style.width = Math.random() * 20 + 10 + 'px';
+            element.style.height = element.style.width;
+            element.style.background = 'rgba(255, 107, 107, 0.1)';
+            element.style.borderRadius = '50%';
+            element.style.left = Math.random() * window.innerWidth + 'px';
+            element.style.top = window.innerHeight + 'px';
+            element.style.pointerEvents = 'none';
+            element.style.zIndex = '-1';
+            element.style.transition = 'all 10s linear';
+            
+            document.body.appendChild(element);
+            
+            setTimeout(() => {
+                element.style.top = '-50px';
+                element.style.opacity = '0';
+            }, 100);
+            
+            setTimeout(() => {
+                document.body.removeChild(element);
+            }, 10000);
+        }
+
+        // Create floating elements periodically
+        setInterval(createFloatingElement, 3000);
+
+        // Header scroll effect
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('.header');
+            if (window.scrollY > 100) {
+                header.style.background = 'rgba(15, 15, 35, 0.98)';
+            } else {
+                header.style.background = 'rgba(15, 15, 35, 0.95)';
+            }
+        });
+    </script>
+</body>
+</html>

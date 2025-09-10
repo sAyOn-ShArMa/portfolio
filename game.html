@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block shift</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .game-header {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .game-header h1 {
+            font-size: 3em;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            margin: 10px 0;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .game-container {
+            position: relative;
+            background: linear-gradient(to bottom, #228B22, #32CD32);
+            border: 4px solid #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: repeating-linear-gradient(
+                90deg,
+                #228B22 0px,
+                #228B22 40px,
+                #32CD32 40px,
+                #32CD32 80px
+            );
+        }
+
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .controls p {
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            border: 3px solid #FFD700;
+        }
+
+        .game-over h2 {
+            color: #FFD700;
+            margin-top: 0;
+        }
+
+        button {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            color: #333;
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .power-up {
+            position: absolute;
+            font-size: 12px;
+            color: #FFD700;
+            font-weight: bold;
+            pointer-events: none;
+            animation: powerUpFloat 0.5s ease-out;
+        }
+
+        @keyframes powerUpFloat {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-30px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-header">
+        <h1>Block Shift </h1>
+        <div class="stats">
+            <div>Score: <span id="score">0</span></div>
+            <div>Level: <span id="level">1</span></div>
+            <div>Lives: <span id="lives">3</span></div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+        <div class="game-over" id="gameOver">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <p>Great effort! You made it to level <span id="finalLevel">1</span>!</p>
+            <button onclick="restartGame()">Play Again</button>
+        </div>
+    </div>
+
+    <div class="controls">
+        <p><strong>Controls:</strong></p>
+        <p>🎮 WASD or Arrow Keys to move</p>
+        <p>🎯 Avoid red defenders • Collect yellow power-ups • Score touchdowns!</p>
+        <p>💪 Speed increases each level • Get 3 strikes and you're out!</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameState = {
+            score: 0,
+            level: 1,
+            lives: 3,
+            gameRunning: true,
+            player: { x: 50, y: 250, size: 15, speed: 4, color: '#0066CC' },
+            defenders: [],
+            powerUps: [],
+            particles: []
+        };
+
+        const keys = {
+            w: false, a: false, s: false, d: false,
+            ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false
+        };
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.key)) {
+                keys[e.key] = true;
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.key)) {
+                keys[e.key] = false;
+                e.preventDefault();
+            }
+        });
+
+        function createDefender() {
+            return {
+                x: canvas.width + 20,
+                y: Math.random() * (canvas.height - 40) + 20,
+                size: 12,
+                speed: 2 + gameState.level * 0.3,
+                color: '#CC0000'
+            };
+        }
+
+        function createPowerUp() {
+            return {
+                x: canvas.width + 20,
+                y: Math.random() * (canvas.height - 30) + 15,
+                size: 10,
+                speed: 1.5,
+                color: '#FFD700',
+                type: 'points'
+            };
+        }
+
+        function createParticle(x, y, color) {
+            return {
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                life: 30,
+                color: color,
+                size: Math.random() * 4 + 2
+            };
+        }
+
+        function updatePlayer() {
+            if (!gameState.gameRunning) return;
+
+            // Movement
+            if ((keys.w || keys.ArrowUp) && gameState.player.y > gameState.player.size) {
+                gameState.player.y -= gameState.player.speed;
+            }
+            if ((keys.s || keys.ArrowDown) && gameState.player.y < canvas.height - gameState.player.size) {
+                gameState.player.y += gameState.player.speed;
+            }
+            if ((keys.a || keys.ArrowLeft) && gameState.player.x > gameState.player.size) {
+                gameState.player.x -= gameState.player.speed;
+            }
+            if ((keys.d || keys.ArrowRight) && gameState.player.x < canvas.width - gameState.player.size) {
+                gameState.player.x += gameState.player.speed;
+            }
+
+            // Check for touchdown
+            if (gameState.player.x >= canvas.width - gameState.player.size) {
+                touchdown();
+            }
+        }
+
+        function updateDefenders() {
+            for (let i = gameState.defenders.length - 1; i >= 0; i--) {
+                const defender = gameState.defenders[i];
+                defender.x -= defender.speed;
+
+                // Remove off-screen defenders
+                if (defender.x < -defender.size) {
+                    gameState.defenders.splice(i, 1);
+                    continue;
+                }
+
+                // Check collision with player
+                const dx = gameState.player.x - defender.x;
+                const dy = gameState.player.y - defender.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < gameState.player.size + defender.size - 5) {
+                    // Hit by defender
+                    gameState.lives--;
+                    
+                    // Create impact particles
+                    for (let j = 0; j < 8; j++) {
+                        gameState.particles.push(createParticle(gameState.player.x, gameState.player.y, '#FF4444'));
+                    }
+                    
+                    // Reset player position
+                    gameState.player.x = 50;
+                    gameState.player.y = 250;
+                    
+                    // Remove the defender
+                    gameState.defenders.splice(i, 1);
+                    
+                    if (gameState.lives <= 0) {
+                        endGame();
+                    }
+                    break;
+                }
+            }
+        }
+
+        function updatePowerUps() {
+            for (let i = gameState.powerUps.length - 1; i >= 0; i--) {
+                const powerUp = gameState.powerUps[i];
+                powerUp.x -= powerUp.speed;
+
+                // Remove off-screen power-ups
+                if (powerUp.x < -powerUp.size) {
+                    gameState.powerUps.splice(i, 1);
+                    continue;
+                }
+
+                // Check collision with player
+                const dx = gameState.player.x - powerUp.x;
+                const dy = gameState.player.y - powerUp.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < gameState.player.size + powerUp.size) {
+                    // Collected power-up
+                    gameState.score += 50;
+                    
+                    // Create collection particles
+                    for (let j = 0; j < 6; j++) {
+                        gameState.particles.push(createParticle(powerUp.x, powerUp.y, '#FFD700'));
+                    }
+                    
+                    // Show floating text
+                    showFloatingText(powerUp.x, powerUp.y, '+50');
+                    
+                    gameState.powerUps.splice(i, 1);
+                }
+            }
+        }
+
+        function updateParticles() {
+            for (let i = gameState.particles.length - 1; i >= 0; i--) {
+                const particle = gameState.particles[i];
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.vx *= 0.98;
+                particle.vy *= 0.98;
+                particle.life--;
+                particle.size *= 0.98;
+                
+                if (particle.life <= 0 || particle.size < 0.5) {
+                    gameState.particles.splice(i, 1);
+                }
+            }
+        }
+
+        function showFloatingText(x, y, text) {
+            const textEl = document.createElement('div');
+            textEl.className = 'power-up';
+            textEl.textContent = text;
+            textEl.style.left = x + 'px';
+            textEl.style.top = y + 'px';
+            document.body.appendChild(textEl);
+            
+            setTimeout(() => {
+                document.body.removeChild(textEl);
+            }, 500);
+        }
+
+        function touchdown() {
+            gameState.score += 100 + (gameState.level * 20);
+            gameState.level++;
+            
+            // Create celebration particles
+            for (let i = 0; i < 15; i++) {
+                gameState.particles.push(createParticle(gameState.player.x, gameState.player.y, '#00FF00'));
+            }
+            
+            showFloatingText(gameState.player.x, gameState.player.y, 'TOUCHDOWN!');
+            
+            // Reset player position
+            gameState.player.x = 50;
+            gameState.player.y = 250;
+            
+            // Clear enemies for a moment
+            gameState.defenders = [];
+        }
+
+        function spawnEnemies() {
+            // Spawn defenders
+            if (Math.random() < 0.02 + gameState.level * 0.005) {
+                gameState.defenders.push(createDefender());
+            }
+            
+            // Spawn power-ups
+            if (Math.random() < 0.008) {
+                gameState.powerUps.push(createPowerUp());
+            }
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = gameState.player.color;
+            ctx.fillRect(
+                gameState.player.x - gameState.player.size,
+                gameState.player.y - gameState.player.size,
+                gameState.player.size * 2,
+                gameState.player.size * 2
+            );
+            
+            // Player helmet
+            ctx.fillStyle = '#003366';
+            ctx.fillRect(
+                gameState.player.x - gameState.player.size + 3,
+                gameState.player.y - gameState.player.size + 2,
+                gameState.player.size * 2 - 6,
+                8
+            );
+        }
+
+        function drawDefenders() {
+            gameState.defenders.forEach(defender => {
+                ctx.fillStyle = defender.color;
+                ctx.fillRect(
+                    defender.x - defender.size,
+                    defender.y - defender.size,
+                    defender.size * 2,
+                    defender.size * 2
+                );
+                
+                // Defender helmet
+                ctx.fillStyle = '#660000';
+                ctx.fillRect(
+                    defender.x - defender.size + 2,
+                    defender.y - defender.size + 1,
+                    defender.size * 2 - 4,
+                    6
+                );
+            });
+        }
+
+        function drawPowerUps() {
+            gameState.powerUps.forEach(powerUp => {
+                ctx.fillStyle = powerUp.color;
+                ctx.beginPath();
+                ctx.arc(powerUp.x, powerUp.y, powerUp.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Star shape
+                ctx.fillStyle = '#FFA500';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('★', powerUp.x, powerUp.y + 5);
+            });
+        }
+
+        function drawParticles() {
+            gameState.particles.forEach(particle => {
+                ctx.globalAlpha = particle.life / 30;
+                ctx.fillStyle = particle.color;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+        }
+
+        function drawField() {
+            // Yard lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < canvas.width; i += 80) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            
+            // End zone
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+            ctx.fillRect(canvas.width - 80, 0, 80, canvas.height);
+            
+            ctx.fillStyle = '#FFD700';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('END ZONE', canvas.width - 40, canvas.height / 2);
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('level').textContent = gameState.level;
+            document.getElementById('lives').textContent = gameState.lives;
+        }
+
+        function endGame() {
+            gameState.gameRunning = false;
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('finalLevel').textContent = gameState.level;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        function restartGame() {
+            gameState = {
+                score: 0,
+                level: 1,
+                lives: 3,
+                gameRunning: true,
+                player: { x: 50, y: 250, size: 15, speed: 4, color: '#0066CC' },
+                defenders: [],
+                powerUps: [],
+                particles: []
+            };
+            document.getElementById('gameOver').style.display = 'none';
+        }
+
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (gameState.gameRunning) {
+                // Update
+                updatePlayer();
+                updateDefenders();
+                updatePowerUps();
+                updateParticles();
+                spawnEnemies();
+                
+                // Draw
+                drawField();
+                drawPlayer();
+                drawDefenders();
+                drawPowerUps();
+                drawParticles();
+                
+                updateUI();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
